@@ -1,5 +1,3 @@
-use std::{fmt::Display, vec};
-
 pub fn convert(expr: &str) -> String {
   let mut result = String::new();
   let mut stack: Vec<char> = Vec::new();
@@ -66,7 +64,7 @@ fn extract_while_brackets(stack: &mut Vec<char>, type_of_brackets: char) -> Stri
   let mut result = String::new();
 
   while stack.is_empty() == false && *stack.last().unwrap() != type_of_brackets {
-    result = format!(" {}{}", result, stack.pop().unwrap());
+    result = format!("{} {}", result, stack.pop().unwrap());
   }
 
   result
