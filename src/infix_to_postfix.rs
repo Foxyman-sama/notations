@@ -1,71 +1,79 @@
 pub fn convert(expr: &str) -> String {
   let mut result = String::new();
-  let mut stack: Vec<char> = Vec::new();
+  let mut stack = Vec::new();
+
   for ch in expr.chars() {
-    if ch.is_ascii_digit() {
+    if ch.is_whitespace() {
+      continue;
+    }
+
+    if ch.is_digit(10) {
+      if result.is_empty() == false {
+        result.push(' ');
+      }
       result.push(ch);
     } else if ch == '(' {
       stack.push(ch);
-    } else if is_operator(ch) {
-      result = format!("{}{} ", result, process_operators(ch, &mut stack));
     } else if ch == ')' {
-      result = format!("{}{}", result, extract_until_open_bracket(&mut stack));
+      while stack.last().unwrap().ne(&'(') {
+        push_into_string_space_and_from_stack(&mut result, &mut stack)
+      }
       stack.pop();
+    } else {
+      while stack.is_empty() == false && precedence(ch) <= precedence(*stack.last().unwrap()) {
+        push_into_string_space_and_from_stack(&mut result, &mut stack)
+      }
+      stack.push(ch);
     }
   }
 
-  format!("{}{}", result, extract_until_closed_bracket(&mut stack))
-}
-
-fn process_operators(right_op: char, stack: &mut Vec<char>) -> String {
-  let mut result = String::new();
-
-  if stack.is_empty() == false {
-    let left_op = *stack.last().unwrap();
-    while stack.is_empty() == false && is_operator(left_op) && precedence(left_op, right_op) {
-      result = format!(" {}{}", result, left_op);
-    }
+  while stack.is_empty() == false {
+    push_into_string_space_and_from_stack(&mut result, &mut stack)
   }
-  stack.push(right_op);
 
   result
 }
 
-fn is_operator(ch: char) -> bool {
-  match ch {
-    '*' | '/' | '+' | '-' | '^' | '%' => true,
-    _ => false,
+fn push_into_string_space_and_from_stack(str: &mut String, stack: &mut Vec<char>) {
+  str.push(' ');
+  str.push(stack.pop().unwrap());
+}
+
+fn precedence(op: char) -> i32 {
+  match op {
+    '+' | '-' => 1,
+    '*' | '/' => 2,
+    '^' => 3,
+    _ => 0,
   }
 }
 
-fn precedence(left_op: char, right_op: char) -> bool {
-  if left_op == '^' {
-    true
-  } else if right_op == '^' {
-    false
-  } else if left_op == '*' || left_op == '/' || left_op == '%' {
-    true
-  } else if right_op == '*' || right_op == '/' || right_op == '%' {
-    false
-  } else {
-    true
-  }
-}
+#[cfg(test)]
+mod tests {
+  use super::*;
 
-fn extract_until_open_bracket(stack: &mut Vec<char>) -> String {
-  extract_while_brackets(stack, '(')
-}
-
-fn extract_until_closed_bracket(stack: &mut Vec<char>) -> String {
-  extract_while_brackets(stack, ')')
-}
-
-fn extract_while_brackets(stack: &mut Vec<char>, type_of_brackets: char) -> String {
-  let mut result = String::new();
-
-  while stack.is_empty() == false && *stack.last().unwrap() != type_of_brackets {
-    result = format!("{} {}", result, stack.pop().unwrap());
+  #[test]
+  fn three_plus_five() {
+    assert_eq!(convert("3 + 5"), "3 5 +");
   }
 
-  result
+  #[test]
+  fn three_plus_five_multiply_five_with_brackets() {
+    assert_eq!(convert("(3 + 5) * 7"), "3 5 + 7 *");
+  }
+
+  #[test]
+  fn three_plus_five_multiply_five_without_brackets() {
+    assert_eq!(convert("3 + 5 * 7"), "3 5 7 * +");
+  }
+
+  #[test]
+  fn complex_expression() {
+    assert_eq!(convert("3 + 4 * 2 / (1 - 5)^2"), "3 4 2 * 1 5 - 2 ^ / +");
+  }
+
+  #[test]
+  fn simple_two_digit_expression() {
+    assert_eq!(convert("34 + 57"), "34 57 +");
+  }
 }
