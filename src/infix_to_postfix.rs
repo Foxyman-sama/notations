@@ -1,29 +1,35 @@
 pub fn convert(expr: &str) -> String {
   let mut result = String::new();
   let mut stack = Vec::new();
+  let mut can_add_num: bool = false;
 
   for ch in expr.chars() {
     if ch.is_whitespace() {
+      can_add_num = false;
       continue;
     }
 
     if ch.is_digit(10) {
-      if result.is_empty() == false {
+      if result.is_empty() == false && can_add_num == false {
         result.push(' ');
       }
       result.push(ch);
-    } else if ch == '(' {
-      stack.push(ch);
-    } else if ch == ')' {
-      while stack.last().unwrap().ne(&'(') {
-        push_into_string_space_and_from_stack(&mut result, &mut stack)
-      }
-      stack.pop();
+      can_add_num = true;
     } else {
-      while stack.is_empty() == false && precedence(ch) <= precedence(*stack.last().unwrap()) {
-        push_into_string_space_and_from_stack(&mut result, &mut stack)
+      can_add_num = false;
+      if ch == '(' {
+        stack.push(ch);
+      } else if ch == ')' {
+        while stack.last().unwrap().ne(&'(') {
+          push_into_string_space_and_from_stack(&mut result, &mut stack)
+        }
+        stack.pop();
+      } else {
+        while stack.is_empty() == false && precedence(ch) <= precedence(*stack.last().unwrap()) {
+          push_into_string_space_and_from_stack(&mut result, &mut stack)
+        }
+        stack.push(ch);
       }
-      stack.push(ch);
     }
   }
 
@@ -53,11 +59,6 @@ mod tests {
   use super::*;
 
   #[test]
-  fn three_plus_five() {
-    assert_eq!(convert("3 + 5"), "3 5 +");
-  }
-
-  #[test]
   fn three_plus_five_multiply_five_with_brackets() {
     assert_eq!(convert("(3 + 5) * 7"), "3 5 + 7 *");
   }
@@ -73,7 +74,10 @@ mod tests {
   }
 
   #[test]
-  fn simple_two_digit_expression() {
-    assert_eq!(convert("34 + 57"), "34 57 +");
+  fn complex_many_digit_expression() {
+    assert_eq!(
+      convert("3213 + 555555 * 111 / (122222222 - 15)^109"),
+      "3213 555555 111 * 122222222 15 - 109 ^ / +"
+    );
   }
 }
