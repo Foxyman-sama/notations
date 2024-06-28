@@ -9,6 +9,7 @@ struct InfixToPostfixParser {
 
 impl parser::Parser for InfixToPostfixParser {
   fn parse(&mut self, expr: &str) -> String {
+    self.clear();
     self.main_parse(expr);
     self.extract_remaining_operators();
     self.result.clone()
@@ -53,6 +54,12 @@ impl InfixToPostfixParser {
       result: String::new(),
       can_add_num: false,
     }
+  }
+
+  fn clear(&mut self) {
+    self.result.clear();
+    self.stack.clear();
+    self.can_add_num = false;
   }
 
   fn main_parse(&mut self, expr: &str) {
