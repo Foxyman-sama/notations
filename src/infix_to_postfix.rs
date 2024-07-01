@@ -12,10 +12,9 @@ pub struct InfixToPostfixParser {
 impl Parser for InfixToPostfixParser {
   fn parse(&mut self, expr: &str) -> Result<String, String> {
     self.check_expression(expr)?;
-    self.clear();
     self.main_parse(expr)?;
     self.extract_remaining_operators()?;
-    Ok(self.result.clone())
+    Ok(std::mem::take(&mut self.result))
   }
 }
 
@@ -34,12 +33,6 @@ impl InfixToPostfixParser {
     } else {
       Ok(())
     }
-  }
-
-  fn clear(&mut self) {
-    self.result.clear();
-    self.stack.clear();
-    self.can_add_operand = false;
   }
 
   fn main_parse(&mut self, expr: &str) -> Result<(), String> {
@@ -102,6 +95,7 @@ impl InfixToPostfixParser {
     }
 
     if self.stack.is_empty() == false {
+      self.stack.clear();
       return Err(String::from("Missing right bracket."));
     }
 

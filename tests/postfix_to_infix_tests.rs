@@ -20,3 +20,12 @@ fn complex_expression() {
 
   assert_eq!(result, "(3213 + ((555555 * 111) / ((122222222 - 15) ^ 109)))");
 }
+
+#[test]
+fn error_when_lacks_operators() {
+  let mut parser = PostfixToInfixParser::new();
+
+  let result = parser.parse("3 4 5 +");
+
+  assert!(result.is_err());
+}
