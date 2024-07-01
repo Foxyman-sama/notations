@@ -12,7 +12,7 @@ pub struct InfixToPostfixParser {
 impl Parser for InfixToPostfixParser {
   fn parse(&mut self, expr: &str) -> Result<String, String> {
     self.check_expression(expr)?;
-    self.main_parse(expr)?;
+    self.try_parse(expr)?;
     self.extract_remaining_operators()?;
     Ok(std::mem::take(&mut self.result))
   }
@@ -35,7 +35,7 @@ impl InfixToPostfixParser {
     }
   }
 
-  fn main_parse(&mut self, expr: &str) -> Result<(), String> {
+  fn try_parse(&mut self, expr: &str) -> Result<(), String> {
     for ch in expr.chars() {
       match ch {
         ' ' => (),

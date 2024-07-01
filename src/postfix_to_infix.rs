@@ -10,7 +10,7 @@ pub struct PostfixToInfixParser {
 impl Parser for PostfixToInfixParser {
   fn parse(&mut self, expr: &str) -> Result<String, String> {
     self.check_expression(expr)?;
-    self.main_parse(expr);
+    self.try_parse(expr)?;
     self.check_stack()
   }
 }
@@ -28,14 +28,15 @@ impl PostfixToInfixParser {
     }
   }
 
-  fn main_parse(&mut self, expr: &str) {
+  fn try_parse(&mut self, expr: &str) -> Result<(), String> {
     for substr in expr.split_whitespace() {
       if self.is_operand(substr) {
         self.parse_as_operand(substr);
       } else {
-        self.parse_as_operator(substr);
+        self.parse_as_operator(substr)?;
       }
     }
+    Ok(())
   }
 
   fn is_operand(&mut self, str: &str) -> bool {
@@ -49,16 +50,25 @@ impl PostfixToInfixParser {
     self.stack.push(str.to_string());
   }
 
-  fn parse_as_operator(&mut self, str: &str) {
-    let operand_2 = self.stack.pop().unwrap();
-    let operand_1 = self.stack.pop().unwrap();
+  fn parse_as_operator(&mut self, str: &str) -> Result<(), String> {
+    let operand_2 = self.pop_operand()?;
+    let operand_1 = self.pop_operand()?;
     let expr = format!("({} {} {})", operand_1, str, operand_2);
     self.stack.push(expr);
+    Ok(())
+  }
+
+  fn pop_operand(&mut self) -> Result<String, String> {
+    if self.stack.is_empty() {
+      Err(String::from("Wrong number of operands."))
+    } else {
+      Ok(self.stack.pop().unwrap())
+    }
   }
 
   fn check_stack(&mut self) -> Result<String, String> {
     if self.stack.len() > 1 {
-      Err(String::from("Broken expression."))
+      Err(String::from("Wrong number of operators."))
     } else {
       Ok(self.stack.pop().unwrap())
     }

@@ -29,3 +29,12 @@ fn error_when_lacks_operators() {
 
   assert!(result.is_err());
 }
+
+#[test]
+fn error_when_lacks_operands() {
+  let mut parser = PostfixToInfixParser::new();
+
+  let result = parser.parse("3213 555555 111 122222222 15 - 109 ^ / +");
+
+  assert!(result.is_err());
+}
