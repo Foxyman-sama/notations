@@ -1,15 +1,13 @@
 #[path = "parser.rs"]
 mod parser;
 
-use std::fmt::format;
+pub use parser::Parser;
 
-use parser::Parser;
-// https://www.geeksforgeeks.org/postfix-to-infix/
-struct PostfixToInfix {
+pub struct PostfixToInfixParser {
   stack: Vec<String>,
 }
 
-impl Parser for PostfixToInfix {
+impl Parser for PostfixToInfixParser {
   fn parse(&mut self, expr: &str) -> Result<String, String> {
     self.check_expression(expr)?;
     self.main_parse(expr);
@@ -17,9 +15,9 @@ impl Parser for PostfixToInfix {
   }
 }
 
-impl PostfixToInfix {
-  fn new() -> PostfixToInfix {
-    PostfixToInfix { stack: Vec::new() }
+impl PostfixToInfixParser {
+  pub fn new() -> PostfixToInfixParser {
+    PostfixToInfixParser { stack: Vec::new() }
   }
 
   fn check_expression(&self, expr: &str) -> Result<(), String> {
@@ -56,28 +54,5 @@ fn is_operand(str: &str) -> bool {
   match str.chars().last() {
     Some(ch) => ch.is_digit(10),
     None => false,
-  }
-}
-
-#[cfg(test)]
-mod postfix_to_infix_tests {
-  use super::*;
-
-  #[test]
-  fn when_user_forgot_about_expression() {
-    let mut parser = PostfixToInfix::new();
-
-    let result = parser.parse("");
-
-    assert!(result.is_err());
-  }
-
-  #[test]
-  fn complex_expression() {
-    let mut parser = PostfixToInfix::new();
-
-    let result = parser.parse("3213 555555 111 * 122222222 15 - 109 ^ / +").unwrap();
-
-    assert_eq!(result, "(3213 + ((555555 * 111) / ((122222222 - 15) ^ 109)))");
   }
 }

@@ -1,29 +1,30 @@
 #[path = "parser.rs"]
 mod parser;
-use parser::Parser;
 
-struct InfixToPostfixParser {
+pub use parser::Parser;
+
+pub struct InfixToPostfixParser {
   result: String,
   stack: Vec<char>,
-  can_add_num: bool,
+  can_add_operand: bool,
 }
 
 impl Parser for InfixToPostfixParser {
   fn parse(&mut self, expr: &str) -> Result<String, String> {
     self.check_expression(expr)?;
     self.clear();
-    self.main_parse(expr);
-    self.extract_remaining_operators();
+    self.main_parse(expr)?;
+    self.extract_remaining_operators()?;
     Ok(self.result.clone())
   }
 }
 
 impl InfixToPostfixParser {
-  fn new() -> InfixToPostfixParser {
+  pub fn new() -> InfixToPostfixParser {
     InfixToPostfixParser {
       stack: Vec::new(),
       result: String::new(),
-      can_add_num: false,
+      can_add_operand: false,
     }
   }
 
@@ -38,55 +39,73 @@ impl InfixToPostfixParser {
   fn clear(&mut self) {
     self.result.clear();
     self.stack.clear();
-    self.can_add_num = false;
+    self.can_add_operand = false;
   }
 
-  fn main_parse(&mut self, expr: &str) {
-    use parser::Parser;
-
+  fn main_parse(&mut self, expr: &str) -> Result<(), String> {
     for ch in expr.chars() {
       match ch {
         ' ' => (),
-        '0'..='9' => self.parse_as_digit(ch),
-        '(' => self.parse_as_open_bracket(),
-        ')' => self.parse_as_closed_bracket(),
-        _ => self.parse_as_operator(ch),
+        '0'..='9' | 'a'..='z' | 'A'..='Z' => self.parse_as_operand(ch),
+        _ => self.parse_other(ch)?,
       }
     }
+
+    Ok(())
   }
 
-  fn parse_as_digit(&mut self, digit: char) {
-    if self.result.is_empty() == false && self.can_add_num == false {
+  fn parse_as_operand(&mut self, digit: char) {
+    if self.result.is_empty() == false && self.can_add_operand == false {
       self.result.push(' ');
     }
     self.result.push(digit);
-    self.can_add_num = true;
+    self.can_add_operand = true;
+  }
+
+  fn parse_other(&mut self, ch: char) -> Result<(), String> {
+    self.can_add_operand = false;
+    match ch {
+      '(' => self.parse_as_open_bracket(),
+      ')' => self.parse_as_closed_bracket()?,
+      _ => self.parse_as_operator(ch),
+    }
+
+    Ok(())
   }
 
   fn parse_as_open_bracket(&mut self) {
-    self.can_add_num = false;
     self.stack.push('(');
   }
 
-  fn parse_as_closed_bracket(&mut self) {
-    self.can_add_num = false;
-    while self.stack.last().unwrap().ne(&'(') {
+  fn parse_as_closed_bracket(&mut self) -> Result<(), String> {
+    while self.stack.is_empty() == false && self.stack.last().unwrap().ne(&'(') {
       self.insert_space_and_pop_from_stack();
     }
+
+    if self.stack.is_empty() {
+      return Err(String::from("Missing left bracket."));
+    }
+
     self.stack.pop();
+    Ok(())
   }
 
   fn parse_as_operator(&mut self, op: char) {
-    self.can_add_num = false;
     while self.stack.is_empty() == false && self.precedence(op) {
       self.insert_space_and_pop_from_stack();
     }
     self.stack.push(op);
   }
-  fn extract_remaining_operators(&mut self) {
-    while self.stack.is_empty() == false {
+  fn extract_remaining_operators(&mut self) -> Result<(), String> {
+    while self.stack.is_empty() == false && self.stack.last().unwrap().ne(&'(') {
       self.insert_space_and_pop_from_stack();
     }
+
+    if self.stack.is_empty() == false {
+      return Err(String::from("Missing right bracket."));
+    }
+
+    Ok(())
   }
 
   fn insert_space_and_pop_from_stack(&mut self) {
@@ -107,37 +126,5 @@ impl InfixToPostfixParser {
       '^' => 3,
       _ => 0,
     }
-  }
-}
-
-#[cfg(test)]
-mod infix_to_postfix_tests {
-  use super::*;
-
-  #[test]
-  fn when_user_forgot_about_expression() {
-    let mut parser = InfixToPostfixParser::new();
-
-    let result = parser.parse("");
-
-    assert!(result.is_err());
-  }
-
-  #[test]
-  fn when_user_forgot_about_spaces() {
-    let mut parser = InfixToPostfixParser::new();
-
-    let result = parser.parse("3+4*2/(1-5)^2").unwrap();
-
-    assert_eq!(result, "3 4 2 * 1 5 - 2 ^ / +");
-  }
-
-  #[test]
-  fn complex_expression() {
-    let mut parser = InfixToPostfixParser::new();
-
-    let result = parser.parse("3213 + 555555 * 111 / (122222222 - 15)^109").unwrap();
-
-    assert_eq!(result, "3213 555555 111 * 122222222 15 - 109 ^ / +");
   }
 }
